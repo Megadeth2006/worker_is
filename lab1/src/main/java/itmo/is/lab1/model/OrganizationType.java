@@ -1,4 +1,8 @@
 package itmo.is.lab1.model;
 
-public class OrganizationType {
+public enum  OrganizationType {
+    COMMERCIAL,
+    GOVERNMENT,
+    TRUST,
+    OPEN_JOINT_STOCK_COMPANY;
 }

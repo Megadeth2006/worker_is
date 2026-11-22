@@ -1,4 +1,7 @@
 package itmo.is.lab1.model;
 
-public class Color {
+public enum  Color {
+    RED,
+    BLUE,
+    YELLOW;
 }
