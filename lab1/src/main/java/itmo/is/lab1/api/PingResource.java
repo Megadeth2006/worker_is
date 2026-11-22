@@ -1,5 +1,6 @@
 package itmo.is.lab1.api;
 
+import javax.ejb.Stateless; // <-- ДОБАВИТЬ ЭТОТ ИМПОРТ
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.ws.rs.GET;
@@ -10,6 +11,7 @@ import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.Map;
 
+@Stateless
 @Path("/ping")
 public class PingResource {
 
@@ -24,7 +26,6 @@ public class PingResource {
         result.put("variant", 4089);
         result.put("message", "WildFly 21 + Hibernate + PostgreSQL is working!");
         try {
-            // Проверяем живой коннект к PostgreSQL
             Object dbTime = em.createNativeQuery("SELECT NOW()").getSingleResult();
             result.put("dbConnected", true);
             result.put("dbTime", dbTime.toString());
