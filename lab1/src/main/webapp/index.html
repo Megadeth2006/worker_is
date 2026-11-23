@@ -2,40 +2,521 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Worker IS - Вариант 4089</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ИС управления объектами Worker - Вариант 4089</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { font-size: 0.92rem; }
+        th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
+        th.sortable:hover { background-color: rgba(0,0,0,0.05); }
+        .table-responsive { max-height: 68vh; }
+        .filter-input { min-width: 95px; font-size: 0.8rem; padding: 0.2rem 0.4rem; }
+        .nav-link { cursor: pointer; }
+    </style>
 </head>
 <body class="bg-light">
-<div class="container py-5">
-    <div class="card shadow-sm p-4">
-        <h1 class="h3 mb-3">Информационная система управления объектами Worker</h1>
-        <p class="text-muted">Вариант: 4089 | Сервер: WildFly 21.0.0.Final | СУБД: PostgreSQL</p>
-        <hr>
-        <div id="status" class="alert alert-secondary">Проверка подключения к серверу</div>
-        <button class="btn btn-primary" onclick="checkStatus()">Проверить статус API и БД</button>
+
+<!-- Верхнее меню -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-3 shadow-sm">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="#">Worker IS (4089)</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item">
+                    <a class="nav-link active" id="nav-workers" onclick="switchSection('workers')">Сотрудники (Worker)</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="nav-aux" onclick="switchSection('aux')">Справочники (Связанные объекты)</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="nav-operations" onclick="switchSection('operations')">Специальные операции</a>
+                </li>
+            </ul>
+            <div class="d-flex align-items-center gap-2">
+                <span id="wsStatusBadge" class="badge bg-secondary">WS: подключение...</span>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Уведомления (Toast) -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer" style="z-index: 1090;"></div>
+
+<div class="container-fluid px-4 pb-5">
+
+    <!-- ==================== РАЗДЕЛ 1: WORKER ==================== -->
+    <div id="view-workers">
+        <div class="card shadow-sm mb-3">
+            <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <button class="btn btn-primary" onclick="openCreateWorkerModal()">+ Создать сотрудника</button>
+                    <button class="btn btn-outline-secondary" onclick="resetFilters()">Сбросить фильтры</button>
+                </div>
+
+                <!-- Поиск по ID -->
+                <div class="input-group" style="max-width: 320px;">
+                    <input type="number" min="1" step="1" class="form-control" id="searchWorkerIdInput" placeholder="Поиск по ID...">
+                    <button class="btn btn-outline-primary" type="button" onclick="searchWorkerById()">Найти</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-2">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover table-sm align-middle mb-0">
+                        <thead class="table-light sticky-top">
+                        <tr>
+                            <th class="sortable" data-sort="id" onclick="toggleSort('id')">ID <span class="sort-icon"></span></th>
+                            <th class="sortable" data-sort="name" onclick="toggleSort('name')">Имя <span class="sort-icon"></span></th>
+                            <th>Координаты (X; Y)</th>
+                            <th class="sortable" data-sort="creationDate" onclick="toggleSort('creationDate')">Дата создания <span class="sort-icon"></span></th>
+                            <th class="sortable" data-sort="orgName" onclick="toggleSort('orgName')">Организация <span class="sort-icon"></span></th>
+                            <th class="sortable" data-sort="orgType" onclick="toggleSort('orgType')">Тип орг. <span class="sort-icon"></span></th>
+                            <th class="sortable" data-sort="zipCode" onclick="toggleSort('zipCode')">Индекс орг. <span class="sort-icon"></span></th>
+                            <th class="sortable" data-sort="townName" onclick="toggleSort('townName')">Город орг. <span class="sort-icon"></span></th>
+                            <th class="sortable" data-sort="salary" onclick="toggleSort('salary')">Зарплата <span class="sort-icon"></span></th>
+                            <th class="sortable" data-sort="rating" onclick="toggleSort('rating')">Рейтинг <span class="sort-icon"></span></th>
+                            <th class="sortable" data-sort="position" onclick="toggleSort('position')">Должность <span class="sort-icon"></span></th>
+                            <th class="sortable" data-sort="status" onclick="toggleSort('status')">Статус <span class="sort-icon"></span></th>
+                            <th class="sortable" data-sort="eyeColor" onclick="toggleSort('eyeColor')">Глаза <span class="sort-icon"></span></th>
+                            <th class="sortable" data-sort="hairColor" onclick="toggleSort('hairColor')">Волосы <span class="sort-icon"></span></th>
+                            <th class="sortable" data-sort="nationality" onclick="toggleSort('nationality')">Страна <span class="sort-icon"></span></th>
+                            <th class="sortable" data-sort="personLocation" onclick="toggleSort('personLocation')">Локация персоны <span class="sort-icon"></span></th>
+                            <th>Действия</th>
+                        </tr>
+                        <!-- Фильтры (неполное совпадение) -->
+                        <tr class="bg-white">
+                            <th></th>
+                            <th><input type="text" class="form-control filter-input" data-filter="name" placeholder="Фильтр..."></th>
+                            <th></th>
+                            <th></th>
+                            <th><input type="text" class="form-control filter-input" data-filter="orgName" placeholder="Фильтр..."></th>
+                            <th><input type="text" class="form-control filter-input" data-filter="orgType" placeholder="Фильтр..."></th>
+                            <th><input type="text" class="form-control filter-input" data-filter="zipCode" placeholder="Фильтр..."></th>
+                            <th><input type="text" class="form-control filter-input" data-filter="townName" placeholder="Фильтр..."></th>
+                            <th></th>
+                            <th></th>
+                            <th><input type="text" class="form-control filter-input" data-filter="position" placeholder="Фильтр..."></th>
+                            <th><input type="text" class="form-control filter-input" data-filter="status" placeholder="Фильтр..."></th>
+                            <th><input type="text" class="form-control filter-input" data-filter="eyeColor" placeholder="Фильтр..."></th>
+                            <th><input type="text" class="form-control filter-input" data-filter="hairColor" placeholder="Фильтр..."></th>
+                            <th><input type="text" class="form-control filter-input" data-filter="nationality" placeholder="Фильтр..."></th>
+                            <th><input type="text" class="form-control filter-input" data-filter="personLocation" placeholder="Фильтр..."></th>
+                            <th></th>
+                        </tr>
+                        </thead>
+                        <tbody id="workersTableBody">
+                        <tr><td colspan="17" class="text-center py-3 text-muted">Загрузка...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted">На странице:</span>
+                    <select class="form-select form-select-sm" id="pageSizeSelect" style="width: auto;" onchange="changePageSize()">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                    <span id="paginationInfo" class="text-muted small"></span>
+                </div>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0" id="paginationContainer"></ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== РАЗДЕЛ 2: ВСПОМОГАТЕЛЬНЫЕ ОБЪЕКТЫ ==================== -->
+    <div id="view-aux" class="d-none">
+        <div class="alert alert-info py-2 small">
+            Порядок создания для новой цепочки: <strong>Локация → Координаты / Адрес / Персона → Организация → Сотрудник</strong>.
+            При попытке удалить объект, на который ссылается другой объект, операция будет отменена.
+        </div>
+
+        <ul class="nav nav-tabs mb-3" id="auxTabs" role="tablist">
+            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-organizations" type="button">Организации</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-persons" type="button">Персоны</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-addresses" type="button">Адреса</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-locations" type="button">Локации</button></li>
+            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-coordinates" type="button">Координаты</button></li>
+        </ul>
+
+        <div class="tab-content">
+            <!-- Организации -->
+            <div class="tab-pane fade show active" id="tab-organizations">
+                <button class="btn btn-primary btn-sm mb-2" onclick="openOrgModal()">+ Создать организацию</button>
+                <div class="table-responsive bg-white rounded shadow-sm p-2">
+                    <table class="table table-bordered table-sm mb-0">
+                        <thead class="table-light">
+                        <tr><th>ID</th><th>Название (fullName)</th><th>Тип</th><th>Годовой оборот</th><th>Сотрудников</th><th>Офиц. адрес</th><th>Почт. адрес</th><th>Действия</th></tr>
+                        </thead>
+                        <tbody id="tbl-organizations"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Персоны -->
+            <div class="tab-pane fade" id="tab-persons">
+                <button class="btn btn-primary btn-sm mb-2" onclick="openPersonModal()">+ Создать персону</button>
+                <div class="table-responsive bg-white rounded shadow-sm p-2">
+                    <table class="table table-bordered table-sm mb-0">
+                        <thead class="table-light">
+                        <tr><th>ID</th><th>Цвет глаз</th><th>Цвет волос</th><th>Вес</th><th>Национальность</th><th>Локация</th><th>Действия</th></tr>
+                        </thead>
+                        <tbody id="tbl-persons"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Адреса -->
+            <div class="tab-pane fade" id="tab-addresses">
+                <button class="btn btn-primary btn-sm mb-2" onclick="openAddressModal()">+ Создать адрес</button>
+                <div class="table-responsive bg-white rounded shadow-sm p-2">
+                    <table class="table table-bordered table-sm mb-0">
+                        <thead class="table-light">
+                        <tr><th>ID</th><th>Индекс (zipCode)</th><th>Город (Location)</th><th>Действия</th></tr>
+                        </thead>
+                        <tbody id="tbl-addresses"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Локации -->
+            <div class="tab-pane fade" id="tab-locations">
+                <button class="btn btn-primary btn-sm mb-2" onclick="openLocationModal()">+ Создать локацию</button>
+                <div class="table-responsive bg-white rounded shadow-sm p-2">
+                    <table class="table table-bordered table-sm mb-0">
+                        <thead class="table-light">
+                        <tr><th>ID</th><th>Название</th><th>X</th><th>Y</th><th>Z</th><th>Действия</th></tr>
+                        </thead>
+                        <tbody id="tbl-locations"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Координаты -->
+            <div class="tab-pane fade" id="tab-coordinates">
+                <button class="btn btn-primary btn-sm mb-2" onclick="openCoordinatesModal()">+ Создать координаты</button>
+                <div class="table-responsive bg-white rounded shadow-sm p-2">
+                    <table class="table table-bordered table-sm mb-0">
+                        <thead class="table-light">
+                        <tr><th>ID</th><th>X</th><th>Y</th><th>Действия</th></tr>
+                        </thead>
+                        <tbody id="tbl-coordinates"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== РАЗДЕЛ 3: СПЕЦИАЛЬНЫЕ ОПЕРАЦИИ ==================== -->
+    <div id="view-operations" class="d-none">
+        <div class="row g-3">
+            <!-- 1. Группировка по rating -->
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+                        <span>1. Группировка по рейтингу (group_workers_by_rating)</span>
+                        <button class="btn btn-sm btn-outline-primary" onclick="loadRatingGroups()">Обновить</button>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-bordered table-sm mb-0">
+                            <thead class="table-light"><tr><th>Рейтинг</th><th>Количество элементов</th></tr></thead>
+                            <tbody id="ratingGroupsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2 и 3. Подсчёт по rating и массив уникальных rating -->
+            <div class="col-md-6">
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header fw-bold">2. Количество объектов с заданным рейтингом (count_workers_by_rating)</div>
+                    <div class="card-body">
+                        <div class="input-group mb-2">
+                            <input type="number" min="1" step="1" class="form-control" id="opCountRatingInput" placeholder="Введите rating (целое > 0)">
+                            <button class="btn btn-primary" onclick="runCountByRating()">Подсчитать</button>
+                        </div>
+                        <div id="opCountResult" class="fw-bold text-primary"></div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-header fw-bold d-flex justify-content-between align-items-center">
+                        <span>3. Массив уникальных значений рейтинга (get_unique_ratings)</span>
+                        <button class="btn btn-sm btn-primary" onclick="runUniqueRatings()">Получить</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="opUniqueResult" class="text-muted">Нажмите «Получить» для запроса из БД</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Перемещение сотрудника -->
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header fw-bold">4. Переместить сотрудника в другую организацию (move_worker_to_organization)</div>
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <label class="form-label">Сотрудник</label>
+                            <select class="form-select" id="opMoveWorkerId"></select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Новая организация</label>
+                            <select class="form-select" id="opMoveOrgId"></select>
+                        </div>
+                        <button class="btn btn-warning" onclick="runMoveWorker()">Переместить (с сохранением должности и ЗП)</button>
+                        <div id="opMoveResult" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Индексация зарплаты -->
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header fw-bold">5. Проиндексировать заработную плату (index_worker_salary)</div>
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <label class="form-label">Сотрудник</label>
+                            <select class="form-select" id="opIndexWorkerId"></select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Коэффициент индексации (&gt; 0, например 1.15)</label>
+                            <input type="number" step="any" min="0.0001" class="form-control" id="opIndexCoeff" placeholder="1.15">
+                        </div>
+                        <button class="btn btn-success" onclick="runIndexSalary()">Проиндексировать ЗП</button>
+                        <div id="opIndexResult" class="mt-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
-<script>
-    async function checkStatus() {
-        const statusDiv = document.getElementById('status');
-        statusDiv.className = 'alert alert-info';
-        statusDiv.innerText = 'Запрос к /api/ping...';
-        try {
-            const res = await fetch('api/ping');
-            const data = await res.json();
-            if (data.dbConnected) {
-                statusDiv.className = 'alert alert-success';
-                statusDiv.innerHTML = `<strong>Всё работает!</strong><br>БД доступна, время БД: ${data.dbTime}`;
-            } else {
-                statusDiv.className = 'alert alert-warning';
-                statusDiv.innerHTML = `<strong>API работает, но ошибка БД:</strong> ${data.dbError}`;
-            }
-        } catch (err) {
-            statusDiv.className = 'alert alert-danger';
-            statusDiv.innerText = 'Ошибка подключения к API: ' + err.message;
-        }
-    }
-    checkStatus();
-</script>
+
+<!-- ==================== МОДАЛЬНЫЕ ОКНА ==================== -->
+
+<!-- 1. Модалка создания / редактирования Worker -->
+<div class="modal fade" id="workerModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="workerModalTitle">Создать сотрудника</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="workerEditId">
+                <div id="workerFormError" class="alert alert-danger d-none"></div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Имя * (не пустое)</label>
+                        <input type="text" class="form-control" id="wName">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Зарплата * (&gt; 0)</label>
+                        <input type="number" step="any" min="0.0001" class="form-control" id="wSalary">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Рейтинг * (целое &gt; 0)</label>
+                        <input type="number" step="1" min="1" class="form-control" id="wRating">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Должность *</label>
+                        <select class="form-select" id="wPosition">
+                            <option value="MANAGER">MANAGER</option>
+                            <option value="HUMAN_RESOURCES">HUMAN_RESOURCES</option>
+                            <option value="HEAD_OF_DIVISION">HEAD_OF_DIVISION</option>
+                            <option value="CLEANER">CLEANER</option>
+                            <option value="MANAGER_OF_CLEANING">MANAGER_OF_CLEANING</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Статус (может быть null)</label>
+                        <select class="form-select" id="wStatus">
+                            <option value="">-- Не задан (null) --</option>
+                            <option value="FIRED">FIRED</option>
+                            <option value="HIRED">HIRED</option>
+                            <option value="RECOMMENDED_FOR_PROMOTION">RECOMMENDED_FOR_PROMOTION</option>
+                            <option value="REGULAR">REGULAR</option>
+                            <option value="PROBATION">PROBATION</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Координаты *</label>
+                        <select class="form-select" id="wCoordinatesId"></select>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Организация *</label>
+                        <select class="form-select" id="wOrganizationId"></select>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label">Персона *</label>
+                        <select class="form-select" id="wPersonId"></select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="saveWorker()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 2. Модалка просмотра карточки Worker по ID (со всеми связанными объектами) -->
+<div class="modal fade" id="workerDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Информация о сотруднике</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="workerDetailsBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-warning" id="btnEditFromDetails">Редактировать</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 3. Модалка Локации -->
+<div class="modal fade" id="locationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Локация</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="locEditId">
+                <div id="locError" class="alert alert-danger d-none"></div>
+                <div class="mb-2"><label class="form-label">Название * (не пустое)</label><input type="text" class="form-control" id="locName"></div>
+                <div class="mb-2"><label class="form-label">X * (целое)</label><input type="number" step="1" class="form-control" id="locX"></div>
+                <div class="mb-2"><label class="form-label">Y *</label><input type="number" step="any" class="form-control" id="locY"></div>
+                <div class="mb-2"><label class="form-label">Z *</label><input type="number" step="any" class="form-control" id="locZ"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button class="btn btn-primary" onclick="saveLocation()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 4. Модалка Координат -->
+<div class="modal fade" id="coordinatesModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Координаты</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="coordEditId">
+                <div id="coordError" class="alert alert-danger d-none"></div>
+                <div class="mb-2"><label class="form-label">X *</label><input type="number" step="any" class="form-control" id="coordX"></div>
+                <div class="mb-2"><label class="form-label">Y *</label><input type="number" step="any" class="form-control" id="coordY"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button class="btn btn-primary" onclick="saveCoordinates()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 5. Модалка Адреса -->
+<div class="modal fade" id="addressModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Адрес</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="addrEditId">
+                <div id="addrError" class="alert alert-danger d-none"></div>
+                <div class="mb-2"><label class="form-label">Индекс (zipCode) *</label><input type="text" class="form-control" id="addrZipCode"></div>
+                <div class="mb-2"><label class="form-label">Город (Location) *</label><select class="form-select" id="addrTownId"></select></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button class="btn btn-primary" onclick="saveAddress()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 6. Модалка Персоны -->
+<div class="modal fade" id="personModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Персона</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="persEditId">
+                <div id="persError" class="alert alert-danger d-none"></div>
+                <div class="mb-2">
+                    <label class="form-label">Цвет глаз *</label>
+                    <select class="form-select" id="persEyeColor">
+                        <option value="RED">RED</option><option value="BLUE">BLUE</option><option value="YELLOW">YELLOW</option>
+                    </select>
+                </div>
+                <div class="mb-2">
+                    <label class="form-label">Цвет волос (может быть null)</label>
+                    <select class="form-select" id="persHairColor">
+                        <option value="">-- Не задан (null) --</option>
+                        <option value="RED">RED</option><option value="BLUE">BLUE</option><option value="YELLOW">YELLOW</option>
+                    </select>
+                </div>
+                <div class="mb-2"><label class="form-label">Вес * (&gt; 0)</label><input type="number" step="any" min="0.0001" class="form-control" id="persWeight"></div>
+                <div class="mb-2">
+                    <label class="form-label">Национальность (может быть null)</label>
+                    <select class="form-select" id="persNationality">
+                        <option value="">-- Не задана (null) --</option>
+                        <option value="USA">USA</option><option value="CHINA">CHINA</option><option value="INDIA">INDIA</option>
+                        <option value="NORTH_KOREA">NORTH_KOREA</option><option value="JAPAN">JAPAN</option>
+                    </select>
+                </div>
+                <div class="mb-2"><label class="form-label">Локация *</label><select class="form-select" id="persLocationId"></select></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button class="btn btn-primary" onclick="savePerson()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 7. Модалка Организации -->
+<div class="modal fade" id="organizationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Организация</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="orgEditId">
+                <div id="orgError" class="alert alert-danger d-none"></div>
+                <div class="mb-2"><label class="form-label">Полное название (может быть null)</label><input type="text" class="form-control" id="orgFullName"></div>
+                <div class="mb-2">
+                    <label class="form-label">Тип организации *</label>
+                    <select class="form-select" id="orgType">
+                        <option value="COMMERCIAL">COMMERCIAL</option>
+                        <option value="GOVERNMENT">GOVERNMENT</option>
+                        <option value="TRUST">TRUST</option>
+                        <option value="OPEN_JOINT_STOCK_COMPANY">OPEN_JOINT_STOCK_COMPANY</option>
+                    </select>
+                </div>
+                <div class="mb-2"><label class="form-label">Годовой оборот * (&gt; 0)</label><input type="number" step="any" min="0.0001" class="form-control" id="orgTurnover"></div>
+                <div class="mb-2"><label class="form-label">Количество сотрудников * (целое &gt; 0)</label><input type="number" step="1" min="1" class="form-control" id="orgEmployees"></div>
+                <div class="mb-2"><label class="form-label">Официальный адрес *</label><select class="form-select" id="orgOfficialAddrId"></select></div>
+                <div class="mb-2"><label class="form-label">Почтовый адрес (может быть null)</label><select class="form-select" id="orgPostalAddrId"></select></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button class="btn btn-primary" onclick="saveOrganization()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
