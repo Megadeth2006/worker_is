@@ -78,7 +78,10 @@ public class WorkerService {
     }
 
     public void moveWorker(long workerId, long newOrgId) {
-        getWorkerById(workerId);
+        Worker worker = getWorkerById(workerId);
+        if (worker.getOrganization().getId().equals(newOrgId)) {
+            throw new AppException(Status.BAD_REQUEST, "Сотрудник уже состоит в этой организации");
+        }
         auxService.getOrganization(newOrgId);
         workerRepo.moveWorkerToOrganization(workerId, newOrgId);
     }

@@ -1,0 +1,1 @@
+ssh -t -p 2222 -L 41885:helios.cs.ifmo.ru:41885 s465635@se.ifmo.ru "bash ~/wildfly/wildfly-21.0.0.Final/bin/standalone.sh"

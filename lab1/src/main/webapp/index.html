@@ -5,18 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ИС управления объектами Worker - Вариант 4089</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { font-size: 0.92rem; }
-        th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
-        th.sortable:hover { background-color: rgba(0,0,0,0.05); }
-        .table-responsive { max-height: 68vh; }
-        .filter-input { min-width: 95px; font-size: 0.8rem; padding: 0.2rem 0.4rem; }
-        .nav-link { cursor: pointer; }
-    </style>
+    <link href="css/style.css" rel="stylesheet">
 </head>
 <body class="bg-light">
 
-<!-- Верхнее меню -->
+<!-- верхнее меню -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-3 shadow-sm">
     <div class="container-fluid">
         <a class="navbar-brand fw-bold" href="#">Worker IS (4089)</a>
@@ -47,7 +40,7 @@
 
 <div class="container-fluid px-4 pb-5">
 
-    <!-- ==================== РАЗДЕЛ 1: WORKER ==================== -->
+    <!-- worker раздел 1 -->
     <div id="view-workers">
         <div class="card shadow-sm mb-3">
             <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
@@ -133,7 +126,7 @@
         </div>
     </div>
 
-    <!-- ==================== РАЗДЕЛ 2: ВСПОМОГАТЕЛЬНЫЕ ОБЪЕКТЫ ==================== -->
+    <!--доп объекты -->
     <div id="view-aux" class="d-none">
         <div class="alert alert-info py-2 small">
             Порядок создания для новой цепочки: <strong>Локация → Координаты / Адрес / Персона → Организация → Сотрудник</strong>.
@@ -149,7 +142,7 @@
         </ul>
 
         <div class="tab-content">
-            <!-- Организации -->
+            <!-- организации -->
             <div class="tab-pane fade show active" id="tab-organizations">
                 <button class="btn btn-primary btn-sm mb-2" onclick="openOrgModal()">+ Создать организацию</button>
                 <div class="table-responsive bg-white rounded shadow-sm p-2">
@@ -162,7 +155,7 @@
                 </div>
             </div>
 
-            <!-- Персоны -->
+            <!-- персоны -->
             <div class="tab-pane fade" id="tab-persons">
                 <button class="btn btn-primary btn-sm mb-2" onclick="openPersonModal()">+ Создать персону</button>
                 <div class="table-responsive bg-white rounded shadow-sm p-2">
@@ -175,7 +168,7 @@
                 </div>
             </div>
 
-            <!-- Адреса -->
+            <!-- адреса -->
             <div class="tab-pane fade" id="tab-addresses">
                 <button class="btn btn-primary btn-sm mb-2" onclick="openAddressModal()">+ Создать адрес</button>
                 <div class="table-responsive bg-white rounded shadow-sm p-2">
@@ -188,7 +181,7 @@
                 </div>
             </div>
 
-            <!-- Локации -->
+            <!-- локации -->
             <div class="tab-pane fade" id="tab-locations">
                 <button class="btn btn-primary btn-sm mb-2" onclick="openLocationModal()">+ Создать локацию</button>
                 <div class="table-responsive bg-white rounded shadow-sm p-2">
@@ -216,10 +209,10 @@
         </div>
     </div>
 
-    <!-- ==================== РАЗДЕЛ 3: СПЕЦИАЛЬНЫЕ ОПЕРАЦИИ ==================== -->
+    <!-- спец операции -->
     <div id="view-operations" class="d-none">
         <div class="row g-3">
-            <!-- 1. Группировка по rating -->
+            <!--группировка по rating -->
             <div class="col-md-6">
                 <div class="card shadow-sm h-100">
                     <div class="card-header fw-bold d-flex justify-content-between align-items-center">
@@ -235,7 +228,7 @@
                 </div>
             </div>
 
-            <!-- 2 и 3. Подсчёт по rating и массив уникальных rating -->
+            <!-- подсчёт по rating и массив уникальных rating -->
             <div class="col-md-6">
                 <div class="card shadow-sm mb-3">
                     <div class="card-header fw-bold">2. Количество объектов с заданным рейтингом (count_workers_by_rating)</div>
@@ -259,7 +252,7 @@
                 </div>
             </div>
 
-            <!-- 4. Перемещение сотрудника -->
+            <!-- перемещение сотрудника -->
             <div class="col-md-6">
                 <div class="card shadow-sm h-100">
                     <div class="card-header fw-bold">4. Переместить сотрудника в другую организацию (move_worker_to_organization)</div>
@@ -278,7 +271,7 @@
                 </div>
             </div>
 
-            <!-- 5. Индексация зарплаты -->
+            <!-- индексация зарплаты -->
             <div class="col-md-6">
                 <div class="card shadow-sm h-100">
                     <div class="card-header fw-bold">5. Проиндексировать заработную плату (index_worker_salary)</div>
@@ -300,9 +293,9 @@
     </div>
 </div>
 
-<!-- ==================== МОДАЛЬНЫЕ ОКНА ==================== -->
+<!-- модалки -->
 
-<!-- 1. Модалка создания / редактирования Worker -->
+<!-- модалка создания / редактирования Worker -->
 <div class="modal fade" id="workerModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -369,7 +362,7 @@
     </div>
 </div>
 
-<!-- 2. Модалка просмотра карточки Worker по ID (со всеми связанными объектами) -->
+<!-- модалка просмотра карточки Worker по id (со всеми связанными объектами) -->
 <div class="modal fade" id="workerDetailsModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -386,7 +379,7 @@
     </div>
 </div>
 
-<!-- 3. Модалка Локации -->
+<!-- модалка Локации -->
 <div class="modal fade" id="locationModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -407,7 +400,7 @@
     </div>
 </div>
 
-<!-- 4. Модалка Координат -->
+<!-- модалка Координат -->
 <div class="modal fade" id="coordinatesModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -426,7 +419,7 @@
     </div>
 </div>
 
-<!-- 5. Модалка Адреса -->
+<!-- модалка Адреса -->
 <div class="modal fade" id="addressModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -445,7 +438,7 @@
     </div>
 </div>
 
-<!-- 6. Модалка Персоны -->
+<!-- модалка Персоны -->
 <div class="modal fade" id="personModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -485,7 +478,7 @@
     </div>
 </div>
 
-<!-- 7. Модалка Организации -->
+<!-- модалка Организации -->
 <div class="modal fade" id="organizationModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -517,6 +510,10 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="app.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auxiliaries.js"></script>
+<script src="js/workers.js"></script>
+<script src="js/operations.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>

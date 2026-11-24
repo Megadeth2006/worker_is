@@ -11,6 +11,8 @@ import javax.persistence.criteria.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.hibernate.Session;
+import java.sql.PreparedStatement;
 
 @Stateless
 public class WorkerRepository {
@@ -173,10 +175,14 @@ public class WorkerRepository {
     }
 
     public void moveWorkerToOrganization(long workerId, long newOrgId) {
-        em.createNativeQuery("SELECT move_worker_to_organization(:wId, :oId)")
-                .setParameter("wId", workerId)
-                .setParameter("oId", newOrgId)
-                .getSingleResult();
+        em.unwrap(Session.class).doWork(connection -> {
+            try (PreparedStatement ps = connection.prepareStatement(
+                    "SELECT move_worker_to_organization(?, ?)")) {
+                ps.setLong(1, workerId);
+                ps.setLong(2, newOrgId);
+                ps.execute();
+            }
+        });
         clearCache();
     }
 
