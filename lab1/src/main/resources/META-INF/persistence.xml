@@ -17,7 +17,6 @@
 
         <properties>
             <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQL95Dialect"/>
-            <!-- validate проверяет совпадение сущностей со схемой бдшки при старте -->
             <property name="hibernate.hbm2ddl.auto" value="validate"/>
             <property name="hibernate.show_sql" value="false"/>
             <property name="hibernate.format_sql" value="true"/>
